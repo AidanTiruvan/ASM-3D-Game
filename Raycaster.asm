@@ -71,7 +71,7 @@ coordinate Ends
     CommandLine LPSTR       ?
 
     ClassName   db "WinClass",0
-    GameName    db "L",0    ;"Maze",0
+    GameName    db "ASM Game - Aidan Tiruvan",0    ;"Maze",0
 
     dtime       dd  32
     prevTime    dd  0
