@@ -53,6 +53,9 @@ SCREEN_HEIGHT   equ     768     ;600       ;up, down      Don't different vertic
 
 RenderColorTest equ     255     ;16711680;65280
 
+; Define floor and ceiling colors
+FLOOR_COLOR     equ     00808080h  ; Greyish color for the floor
+CEILING_COLOR   equ     00A0A0FFh  ; Light blue color for the ceiling (sky)
 
 coordinate  struct
 
@@ -430,45 +433,62 @@ UpdateLogic proc
     Ret
 UpdateLogic EndP
 
-RenderWallK proc hdcBack:HDC, h:DWORD, x:DWORD, color:DWORD    ;here is bug
+RenderWallK proc hdcBack:HDC, h:DWORD, x:DWORD, color:DWORD
     LOCAL l:DWORD
     LOCAL hPen:HPEN
     LOCAL holdPen:HPEN
 
-        mov eax, h
-        cmp eax, 0   
-        jl  uexit
+    mov eax, h
+    cmp eax, 0
+    jl  uexit
 
-        invoke  CreatePen,PS_SOLID, 1, color
-        mov hPen, eax
-        invoke SelectObject,hdcBack, hPen
-        mov holdPen, eax
+    ; Calculate l and h
+    mov eax, SCREEN_HEIGHT  ; SCREEN_HEIGHT + 1
+    inc eax
+    sub eax, h
+    shr eax, 1
+    mov l, eax
+    add eax, h
+    mov h, eax ; Now h is the bottom of the wall
 
-            mov eax, h
-            cmp eax, 768
-            jl  ucount
-            invoke  MoveToEx,hdcBack, x, 0, NULL
-            invoke  LineTo,hdcBack, x, 768
+    ; Draw ceiling
+    invoke CreatePen, PS_SOLID, 1, CEILING_COLOR
+    mov hPen, eax
+    invoke SelectObject, hdcBack, hPen
+    mov holdPen, eax
 
-        ucount:
+    invoke MoveToEx, hdcBack, x, 0, NULL
+    invoke LineTo, hdcBack, x, l
 
-            mov eax, SCREEN_HEIGHT  ;SCREEN_HEIGHT+1
-            inc eax
-            sub eax, h
-            shr eax, 1
-            mov l, eax
-            add eax, h
-            mov h, eax
-            invoke  MoveToEx,hdcBack, x, l, NULL
-            invoke  LineTo,hdcBack, x, h
+    invoke SelectObject, hdcBack, holdPen
+    invoke DeleteObject, hPen
 
-        invoke SelectObject,hdcBack, holdPen
-        invoke DeleteObject,hPen
+    ; Draw wall
+    invoke CreatePen, PS_SOLID, 1, color
+    mov hPen, eax
+    invoke SelectObject, hdcBack, hPen
+    mov holdPen, eax
 
-    uexit:
+    invoke MoveToEx, hdcBack, x, l, NULL
+    invoke LineTo, hdcBack, x, h
 
-RenWallexit:Ret
+    invoke SelectObject, hdcBack, holdPen
+    invoke DeleteObject, hPen
 
+    ; Draw floor
+    invoke CreatePen, PS_SOLID, 1, FLOOR_COLOR
+    mov hPen, eax
+    invoke SelectObject, hdcBack, hPen
+    mov holdPen, eax
+
+    invoke MoveToEx, hdcBack, x, h, NULL
+    invoke LineTo, hdcBack, x, SCREEN_HEIGHT
+
+    invoke SelectObject, hdcBack, holdPen
+    invoke DeleteObject, hPen
+
+uexit:
+    Ret
 RenderWallK EndP
 
 TestRenderKeys proc hdcBack:HDC
@@ -611,6 +631,7 @@ RayCastingEngine proc hdcBack:HDC
 
     RayCastingEngineExit:
     Ret
+
 RayCastingEngine EndP 
 
 FindWallRayY proc
